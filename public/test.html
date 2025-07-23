@@ -19,7 +19,7 @@
   <iframe id="yourIframeID"></iframe>
 
   <script>
-    const url = "url here";
+    const url = "https://example.com";
 
   navigator.serviceWorker.register("/sw.js", { scope: "/" }).then(() => {
     document.getElementById("yourIframeID").src = __uv$config.prefix + __uv$config.encodeUrl(url);
