@@ -1,76 +1,295 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Particles with Dynamic iFrame</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Particle background styling -->
-  <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background-color: #1a202c;
-      font-family: sans-serif;
-    }
-
-    #particles-js {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-    }
-
-    #iframe-container {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100%;
-    }
-
-    #yourIframeID {
-      width: 90%;
-      height: 600px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
-    }
-  </style>
-
-  <!-- UV scripts -->
-  <script src="/uv/uv.bundle.js"></script>
-  <script src="/uv/uv.config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bean's Proxy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/uv/uv.bundle.js"></script>
+    <script src="/uv/uv.config.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Courier Prime', monospace;
+            background: #000;
+            overflow: hidden;
+        }
+        
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.1;
+        }
+        
+        .matrix-text {
+            position: absolute;
+            color: #00ff00;
+            font-size: 14px;
+            line-height: 14px;
+        }
+        
+        .glitch {
+            text-shadow: 
+                0.05em 0 0 #00ff00,
+                -0.05em -0.025em 0 #ff0000,
+                0.025em 0.05em 0 #0000ff;
+            animation: glitch 2s linear infinite;
+        }
+        
+        @keyframes glitch {
+            0%, 90%, 100% {
+                text-shadow: 
+                    0.05em 0 0 #00ff00,
+                    -0.05em -0.025em 0 #ff0000,
+                    0.025em 0.05em 0 #0000ff;
+            }
+            10% {
+                text-shadow: 
+                    -0.05em -0.025em 0 #00ff00,
+                    0.025em 0.025em 0 #ff0000,
+                    -0.05em -0.05em 0 #0000ff;
+            }
+            50% {
+                text-shadow: 
+                    0.025em 0.05em 0 #00ff00,
+                    0.05em 0 0 #ff0000,
+                    0 -0.05em 0 #0000ff;
+            }
+        }
+        
+        .terminal-cursor::after {
+            content: '█';
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        .scanner-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff00, transparent);
+            animation: scan 3s linear infinite;
+        }
+        
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        
+        input:focus {
+            box-shadow: 0 0 20px #00ff00;
+        }
+        
+        .proxy-frame {
+            border: 2px solid #00ff00;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 0, 0.3),
+                inset 0 0 20px rgba(0, 255, 0, 0.1);
+        }
+    </style>
 </head>
-<body>
+<body class="bg-black text-green-400 min-h-screen">
+    <div class="matrix-bg" id="matrixBg"></div>
+    <div class="scanner-line"></div>
+    <div id="header" class="fixed top-0 left-0 right-0 z-50 bg-black bg-opacity-90 border-b border-green-400 p-4 transition-all duration-300">
+        <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-bold glitch">BEAN'S PROXY</h1>
+            <div class="flex items-center space-x-4">
+                <span class="text-sm opacity-75">SECURE CONNECTION ESTABLISHED</span>
+                <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="flex items-center space-x-2">
+                <span class="text-green-400">root@proxy:~$</span>
+                <input 
+                    type="text" 
+                    id="urlInput" 
+                    placeholder="Enter URL or search term..."
+                    class="flex-1 bg-transparent border border-green-400 px-3 py-2 text-green-400 placeholder-green-600 focus:outline-none focus:border-green-300 terminal-cursor"
+                    autocomplete="off"
+                />
+                <button 
+                    id="goButton"
+                    class="px-4 py-2 bg-green-400 text-black font-bold hover:bg-green-300 transition-colors duration-200"
+                >
+                    EXECUTE
+                </button>
+                <button 
+                    id="toggleHeader"
+                    class="px-3 py-2 border border-green-400 text-green-400 hover:bg-green-400 hover:text-black transition-colors duration-200"
+                >
+                    HIDE
+                </button>
+            </div>
+        </div>
+        <div class="mt-2 flex items-center space-x-4 text-xs opacity-75">
+            <span id="statusText">READY</span>
+            <span>|</span>
+            <span id="currentUrl">LOCALHOST</span>
+            <span>|</span>
+            <span id="timestamp"></span>
+        </div>
+    </div>
+    <div id="mainContent" class="pt-32 pb-4 px-4 h-screen">
+        <iframe 
+            id="proxyFrame" 
+            class="w-full h-full proxy-frame bg-black"
+            style="display: none;"
+        ></iframe>
+        <div id="welcomeScreen" class="h-full flex items-center justify-center">
+            <div class="text-center">
+                <div class="text-6xl mb-8 glitch">BEAN'S PROXY</div>
+                <div class="text-xl mb-4">ANONYMOUS BROWSING PROTOCOL ACTIVE</div>
+                <div class="text-sm opacity-75 mb-8">Enter a URL above to begin secure browsing</div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-left max-w-4xl">
+                    <div class="border border-green-400 p-4">
+                        <div class="font-bold mb-2">[STEALTH MODE]</div>
+                        <div class="text-sm opacity-75">Your identity is masked through our secure proxy network</div>
+                    </div>
+                    <div class="border border-green-400 p-4">
+                        <div class="font-bold mb-2">[ENCRYPTION]</div>
+                        <div class="text-sm opacity-75">All traffic is encrypted using military-grade protocols</div>
+                    </div>
+                    <div class="border border-green-400 p-4">
+                        <div class="font-bold mb-2">[NO LOGS]</div>
+                        <div class="text-sm opacity-75">Zero logging policy ensures complete anonymity</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-  <!-- Particle background -->
-  <div id="particles-js"></div>
-
-  <!-- Centered iframe container -->
-  <div id="iframe-container">
-    <iframe id="yourIframeID"></iframe>
-  </div>
-
-  <!-- Load particle script dynamically -->
-  <script>
-    const particlesScript = document.createElement('script');
-    particlesScript.src = "https://cdn.jsdelivr.net/gh/mynameinbean/particles@8997e4eafae447d6537f85249fdb55229009ff26/script.js";
-    particlesScript.async = true;
-    document.body.appendChild(particlesScript);
-  </script>
-
-  <!-- Register service worker and set iframe src -->
-  <script>
-    const url = "https://example.com";
-    navigator.serviceWorker.register("/sw.js", { scope: "/" }).then(() => {
-      document.getElementById("yourIframeID").src = __uv$config.prefix + __uv$config.encodeUrl(url);
-    }).catch(e => {
-      console.error("Service worker registration failed:", e.message);
-    });
-  </script>
-
+    <script>
+        function createMatrixEffect() {
+            const matrixBg = document.getElementById('matrixBg');
+            const characters = '01';
+            const columns = Math.floor(window.innerWidth / 20);
+            
+            for (let i = 0; i < 50; i++) {
+                const span = document.createElement('span');
+                span.className = 'matrix-text';
+                span.style.left = Math.random() * window.innerWidth + 'px';
+                span.style.animationDelay = Math.random() * 2 + 's';
+                span.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                
+                let text = '';
+                for (let j = 0; j < Math.floor(Math.random() * 20) + 10; j++) {
+                    text += characters[Math.floor(Math.random() * characters.length)];
+                }
+                span.textContent = text;
+                
+                matrixBg.appendChild(span);
+                
+                // Animate falling
+                function fall() {
+                    let top = -20;
+                    const interval = setInterval(() => {
+                        top += 2;
+                        span.style.top = top + 'px';
+                        if (top > window.innerHeight) {
+                            top = -20;
+                            span.style.left = Math.random() * window.innerWidth + 'px';
+                        }
+                    }, 50);
+                }
+                fall();
+            }
+        }
+        
+        // Update timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('timestamp').textContent = now.toISOString().replace('T', ' ').slice(0, 19);
+        }
+        function processUrl(input) {
+            if (!input.trim()) return '';
+            if (input.match(/^https?:\/\//)) {
+                return input;
+            }
+            if (input.includes('.') && !input.includes(' ')) {
+                return 'https://' + input;
+            }
+            return 'https://www.google.com/search?q=' + encodeURIComponent(input);
+        }
+        
+        // Load URL in iframe
+        function loadUrl(url) {
+            const iframe = document.getElementById('proxyFrame');
+            const welcomeScreen = document.getElementById('welcomeScreen');
+            const statusText = document.getElementById('statusText');
+            const currentUrl = document.getElementById('currentUrl');
+            
+            statusText.textContent = 'CONNECTING...';
+            currentUrl.textContent = url;
+            
+            // Register service worker and load URL
+            if (typeof navigator.serviceWorker !== 'undefined' && typeof __uv$config !== 'undefined') {
+                navigator.serviceWorker.register("/sw.js", { scope: "/" }).then(() => {
+                    iframe.src = __uv$config.prefix + __uv$config.encodeUrl(url);
+                    welcomeScreen.style.display = 'none';
+                    iframe.style.display = 'block';
+                    statusText.textContent = 'CONNECTED';
+                }).catch(e => {
+                    console.error("Service worker registration failed:", e.message);
+                    // Fallback: load directly
+                    iframe.src = url;
+                    welcomeScreen.style.display = 'none';
+                    iframe.style.display = 'block';
+                    statusText.textContent = 'DIRECT CONNECTION';
+                });
+            } else {
+                iframe.src = url;
+                welcomeScreen.style.display = 'none';
+                iframe.style.display = 'block';
+                statusText.textContent = 'DIRECT CONNECTION';
+            }
+        }
+        
+        document.getElementById('goButton').addEventListener('click', () => {
+            const input = document.getElementById('urlInput').value;
+            const url = processUrl(input);
+            if (url) {
+                loadUrl(url);
+                document.getElementById('urlInput').value = '';
+            }
+        });
+        document.getElementById('urlInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('goButton').click();
+            }
+        });
+        let headerVisible = true;
+        document.getElementById('toggleHeader').addEventListener('click', () => {
+            const header = document.getElementById('header');
+            const mainContent = document.getElementById('mainContent');
+            const button = document.getElementById('toggleHeader');
+            
+            if (headerVisible) {
+                header.style.transform = 'translateY(-100%)';
+                mainContent.style.paddingTop = '0';
+                button.textContent = 'SHOW';
+                headerVisible = false;
+            } else {
+                header.style.transform = 'translateY(0)';
+                mainContent.style.paddingTop = '8rem';
+                button.textContent = 'HIDE';
+                headerVisible = true;
+            }
+        });
+        createMatrixEffect();
+        updateTimestamp();
+        setInterval(updateTimestamp, 1000);=
+        document.getElementById('urlInput').focus();
+    </script>
 </body>
 </html>
