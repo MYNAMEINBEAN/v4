@@ -2,30 +2,74 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Dynamic iFrame Example</title>
+  <title>Particles with Dynamic iFrame</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Particle background styling -->
   <style>
-    #yourIframeID {
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background-color: #1a202c;
+      font-family: sans-serif;
+    }
+
+    #particles-js {
+      position: absolute;
       width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    #iframe-container {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+    }
+
+    #yourIframeID {
+      width: 90%;
       height: 600px;
       border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
     }
   </style>
-<!-- Add these lines !-->
-<script src="/uv/uv.bundle.js"></script>
-<script src="/uv/uv.config.js"></script>
+
+  <!-- UV scripts -->
+  <script src="/uv/uv.bundle.js"></script>
+  <script src="/uv/uv.config.js"></script>
 </head>
 <body>
 
-  <iframe id="yourIframeID"></iframe>
+  <!-- Particle background -->
+  <div id="particles-js"></div>
 
+  <!-- Centered iframe container -->
+  <div id="iframe-container">
+    <iframe id="yourIframeID"></iframe>
+  </div>
+
+  <!-- Load particle script dynamically -->
+  <script>
+    const particlesScript = document.createElement('script');
+    particlesScript.src = "https://cdn.jsdelivr.net/gh/mynameinbean/particles@8997e4eafae447d6537f85249fdb55229009ff26/script.js";
+    particlesScript.async = true;
+    document.body.appendChild(particlesScript);
+  </script>
+
+  <!-- Register service worker and set iframe src -->
   <script>
     const url = "https://example.com";
-
-  navigator.serviceWorker.register("/sw.js", { scope: "/" }).then(() => {
-    document.getElementById("yourIframeID").src = __uv$config.prefix + __uv$config.encodeUrl(url);
-  }).catch(e => {
-    console.error("Service worker registration failed:", e.message);
-  });
+    navigator.serviceWorker.register("/sw.js", { scope: "/" }).then(() => {
+      document.getElementById("yourIframeID").src = __uv$config.prefix + __uv$config.encodeUrl(url);
+    }).catch(e => {
+      console.error("Service worker registration failed:", e.message);
+    });
   </script>
 
 </body>
